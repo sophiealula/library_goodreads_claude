@@ -170,6 +170,7 @@ You must also have run `shelflife setup` first.
 |------|-------------|
 | `check_due_dates` | See active checkouts sorted by urgency — overdue, due soon, and others |
 | `list_holds` | View your holds with queue position and pickup location |
+| `place_hold` | Place a hold on a book by bib ID — picks up at your configured branch |
 | `cancel_hold` | Cancel a hold by ID |
 | `create_stagger_queue` | Queue multiple books to arrive one at a time — places the first hold immediately |
 | `check_stagger_status` | Check your queue and detect new checkouts — suggests placing the next hold |

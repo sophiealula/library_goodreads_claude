@@ -87,6 +87,30 @@ function firstAuthor(authors: unknown): string {
   return "Unknown";
 }
 
+async function resolveBranchCode(library: string, branchName?: string): Promise<string | null> {
+  // If no branch name given, try the configured branch from setup
+  if (!branchName) {
+    const { loadConfig } = await import("./setup.js");
+    const config = loadConfig();
+    branchName = config?.branch;
+  }
+
+  if (!branchName) return null;
+
+  const { fetchBranches } = await import("./branches.js");
+  const branches = await fetchBranches(library);
+
+  // Try exact match first, then case-insensitive contains
+  const exact = branches.find((b) => b.name === branchName);
+  if (exact) return exact.code;
+
+  const q = branchName.toLowerCase();
+  const fuzzy = branches.find((b) => b.name.toLowerCase().includes(q));
+  if (fuzzy) return fuzzy.code;
+
+  return null;
+}
+
 // --- Checkouts ---
 
 export async function fetchCheckouts(): Promise<CheckoutsResult> {
@@ -194,11 +218,20 @@ export async function fetchHolds(): Promise<Hold[]> {
 
 // --- Place Hold ---
 
-export async function placeHold(bibId: string, pickupBranchCode?: string): Promise<PlaceHoldResult> {
+export async function placeHold(bibId: string, pickupBranch?: string): Promise<PlaceHoldResult> {
   const { session } = await getAuth();
 
-  // Default to user's preferred location from their account
-  const branchCode = pickupBranchCode || "79"; // fallback to Uptown (79)
+  // Resolve branch name → numeric code
+  const branchCode = await resolveBranchCode(session.library, pickupBranch);
+  if (!branchCode) {
+    const hint = pickupBranch
+      ? `Could not find branch "${pickupBranch}".`
+      : "No branch configured.";
+    return {
+      success: false,
+      message: `${hint} Run 'shelflife setup' to set a branch, or pass a branch name.`,
+    };
+  }
 
   const res = await authFetch(`/holds`, {
     method: "POST",
