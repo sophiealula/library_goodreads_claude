@@ -2,7 +2,7 @@
 
 Check if books on your Goodreads shelf are available at your local library.
 
-Works with 50+ public libraries across the US and Canada that use [BiblioCommons](https://www.bibliocommons.com/) for their catalog — including Chicago, San Francisco, Boston, Seattle, Toronto, and [many more](#libraries--search-supported-libraries). Run `shelflife libraries` to see the full list.
+Works with 115+ public libraries across the US, Canada, and New Zealand that use [BiblioCommons](https://www.bibliocommons.com/) for their catalog — including Chicago, San Francisco, Boston, Seattle, Toronto, Austin, and [many more](#libraries--search-supported-libraries). Run `shelflife libraries` to see the full list.
 
 ## Two ways to use it
 
@@ -22,8 +22,6 @@ Add to your MCP client config (e.g. Claude Desktop, Claude Code, Cursor, or any 
   }
 }
 ```
-
-Replace `/absolute/path/to/shelflife` with the actual path where you cloned this repo. You'll need to clone and build the project first — see [getting started](#getting-started). (`tsx` is installed as a dev dependency when you run `npm install`.)
 
 Then just ask:
 
@@ -72,7 +70,7 @@ shelflife
 
 ## Getting started
 
-ShelfLife is not published to npm — clone and build it locally:
+Clone and build locally:
 
 ```bash
 git clone https://github.com/sophiealula/library_goodreads_claude.git
@@ -139,7 +137,7 @@ Shows book counts for your `to-read`, `currently-reading`, and `read` shelves. C
 ### `libraries` — Search supported libraries
 
 ```bash
-shelflife libraries            # list all 52 supported libraries
+shelflife libraries            # list all supported libraries
 shelflife libraries chicago    # search by city
 ```
 
