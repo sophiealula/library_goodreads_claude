@@ -1,0 +1,31 @@
+{
+  "name": "shelflife",
+  "version": "0.2.0",
+  "description": "Check if your Goodreads books are available at your local library",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "shelflife": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "mcp": "tsx src/mcp.ts",
+    "start": "node dist/cli.js"
+  },
+  "keywords": ["goodreads", "library", "bibliocommons", "books", "mcp"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "commander": "^13.1.0",
+    "fast-xml-parser": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
