@@ -139,6 +139,17 @@ export async function runSetup(): Promise<Config> {
     }
   }
 
+  // Verify library is reachable
+  process.stdout.write(dim("  Checking connection... "));
+  const libraryOk = await verifyLibrary(selectedLibrary);
+  if (!libraryOk) {
+    console.log(yellow("couldn't reach this library's catalog."));
+    console.log(dim("  This library may have migrated away from BiblioCommons."));
+    console.log(dim("  ShelfLife may not work correctly with this library.\n"));
+  } else {
+    console.log(green("connected\n"));
+  }
+
   // ── Step 3: Branch ────────────────────────────────
 
   console.log(bold("  3. Branch\n"));
@@ -273,6 +284,21 @@ async function pickBranch(
   }
 
   return undefined;
+}
+
+async function verifyLibrary(subdomain: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://${subdomain}.bibliocommons.com/v2/search?query=test&searchType=keyword`,
+      {
+        headers: { "User-Agent": "shelflife/0.2.0 (setup check)" },
+        signal: AbortSignal.timeout(8000),
+      }
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 function extractUserId(input: string): string | null {

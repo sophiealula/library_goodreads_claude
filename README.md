@@ -1,8 +1,8 @@
 # shelflife
 
-Check if books on your Goodreads shelf are available at the Chicago Public Library.
+Check if books on your Goodreads shelf are available at your local library.
 
-Built for [Chicago Public Library](https://www.chipublib.org/) via their [BiblioCommons](https://www.bibliocommons.com/) catalog. Other BiblioCommons libraries (SF, Seattle, Denver, etc.) may work but aren't tested — many have migrated away from BiblioCommons and will silently fail.
+Works with 50+ public libraries across the US and Canada that use [BiblioCommons](https://www.bibliocommons.com/) for their catalog — including Chicago, San Francisco, Boston, Seattle, Toronto, and [many more](#libraries--search-supported-libraries). Run `shelflife libraries` to see the full list.
 
 ## Two ways to use it
 
@@ -90,8 +90,8 @@ shelflife setup
 This walks you through connecting your Goodreads account and finding your library:
 
 1. **Goodreads** — paste your profile URL or user ID (must be [public](https://www.goodreads.com/user/edit))
-2. **Library** — defaults to Chicago Public Library (other BiblioCommons libraries may work)
-3. **Branch** — enter a zip code or address to find your nearest CPL branch
+2. **Library** — search by city name to find your library (verifies the connection works)
+3. **Branch** — enter a zip code or address to find your nearest branch
 
 Config is saved to `~/.shelfliferc.json` so you don't need to pass flags every time.
 
@@ -136,14 +136,12 @@ shelflife shelves
 
 Shows book counts for your `to-read`, `currently-reading`, and `read` shelves. Custom shelves can be checked with `shelflife check --shelf <name>`.
 
-### `libraries` — Search BiblioCommons libraries
+### `libraries` — Search supported libraries
 
 ```bash
-shelflife libraries            # list all known libraries
+shelflife libraries            # list all 52 supported libraries
 shelflife libraries chicago    # search by city
 ```
-
-**Note:** Not all listed libraries are still active on BiblioCommons. Chicago Public Library (`chipublib`) is tested and known to work.
 
 ### `branches` — List branches for a library
 
@@ -179,7 +177,7 @@ You must also have run `shelflife setup` first.
 
 The stagger queue is not a background process — your assistant checks it when you ask and suggests the next action.
 
-**Note:** These features use unofficial BiblioCommons APIs. Tested with Chicago Public Library — other systems may behave differently.
+**Note:** These features use unofficial BiblioCommons APIs and may vary by library system.
 
 ## How it works
 
@@ -192,5 +190,5 @@ The stagger queue is not a background process — your assistant checks it when 
 
 - Node.js 18+
 - A public Goodreads profile
-- Chicago Public Library (other BiblioCommons libraries may work but aren't guaranteed)
+- A library that uses BiblioCommons (run `shelflife libraries` to check)
 - (Optional) Library card number + PIN for account features
