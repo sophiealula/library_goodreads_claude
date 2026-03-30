@@ -4,86 +4,179 @@ Check if books on your Goodreads shelf are available at your local library.
 
 Connects your Goodreads "to-read" list (or any shelf) to any library that uses [BiblioCommons](https://www.bibliocommons.com/) — which includes most major US and Canadian public library systems.
 
-## Quick start
+## Two ways to use it
 
-```bash
-npm install
-npm run build
+### With an AI assistant (MCP)
 
-# Check your shelf
-npx shelflife check --user <GOODREADS_USER_ID> --library <LIBRARY> --branch "<BRANCH>"
-```
+ShelfLife works as an [MCP server](https://modelcontextprotocol.io/) — any MCP-compatible client (Claude, Codex, Cursor, etc.) can check your library for you directly in conversation.
 
-### Example
-
-```bash
-npx shelflife check --user 184356502 --library chipublib --branch "Uptown"
-```
-
-### Find your Goodreads user ID
-
-Your user ID is the number in your Goodreads profile URL:
-`goodreads.com/user/show/184356502-sophie` → `184356502`
-
-Your Goodreads profile must be **public** for the RSS feed to work.
-
-### Find your library subdomain
-
-Your library subdomain is the part before `.bibliocommons.com` in your library's catalog URL. Some common ones:
-
-| Library | Subdomain |
-|---------|-----------|
-| Chicago Public Library | `chipublib` |
-| New York Public Library | `nypl` |
-| San Francisco Public Library | `sfpl` |
-| Seattle Public Library | `seattle` |
-| Boston Public Library | `bpl` |
-| Los Angeles Public Library | `lapl` |
-| Denver Public Library | `denverlibrary` |
-| Toronto Public Library | `torontopubliclibrary` |
-| Vancouver Public Library | `vpl` |
-
-## CLI commands
-
-### `check` — Check book availability
-
-```bash
-shelflife check --user <id> --library <subdomain> [--branch "<name>"] [--shelf <shelf>]
-```
-
-- `-u, --user` — Goodreads user ID (required)
-- `-l, --library` — BiblioCommons library subdomain (required)
-- `-b, --branch` — Specific branch to check availability at
-- `-s, --shelf` — Goodreads shelf to check (default: `to-read`)
-
-### `shelves` — List your Goodreads shelves
-
-```bash
-shelflife shelves --user <id>
-```
-
-## MCP server (for Claude)
-
-shelflife includes an MCP server so Claude can check your library for you.
-
-Add to your Claude config (`~/.claude/claude_desktop_config.json` or Claude Code settings):
+Add to your MCP client config (e.g. Claude Desktop, Claude Code, Cursor, or any MCP host):
 
 ```json
 {
   "mcpServers": {
     "shelflife": {
       "command": "npx",
-      "args": ["tsx", "/path/to/shelflife/src/mcp.ts"]
+      "args": ["tsx", "/absolute/path/to/shelflife/src/mcp.ts"]
     }
   }
 }
 ```
 
-### MCP tools
+Replace `/absolute/path/to/shelflife` with the actual path where you cloned this repo. Requires [getting started](#getting-started) first.
 
-- **`check_shelf`** — Check all books from a Goodreads shelf against a library
-- **`check_book`** — Check a single book by title, author, or ISBN
-- **`list_shelves`** — List available Goodreads shelves for a user
+Then just ask:
+
+> "What books on my to-read list are at the Chicago Public Library?"
+
+Your assistant can also check single books, list your shelves, and — with your library card — manage holds and check due dates. See [library account features](#library-account-features) below.
+
+**Note:** The MCP server reads your config at startup. If you re-run `shelflife setup`, restart your MCP client for changes to take effect.
+
+### Standalone CLI
+
+Run it yourself from the terminal. See [getting started](#getting-started) and [commands](#commands) below.
+
+## What it looks like
+
+```
+shelflife
+
+  Chicago Public Library, Uptown
+
+  On the shelf at Uptown
+
+    Abundance — Ezra Klein
+    HC106.84.K65 2025  ·  chipublib/2624109126_abundance
+    Blockchain Chicken Farm — Xiaowei Wang
+    T55.77.C6W36 2020  ·  chipublib/2266911126_blockchain_chicken_farm
+
+  Available — request to Uptown
+
+    The Count of Monte Cristo — Alexandre Dumas
+    FIC DUMAS  ·  chipublib/1898939126_the_count_of_monte_cristo
+    Everyone Who Is Gone Is Here — Jonathan Blitzer
+    JV6483.B58 2024  ·  chipublib/2561424126_everyone_who_is_gone_is_here
+    Purple Hibiscus — Chimamanda Ngozi Adichie
+    FIC ADICHIE  ·  chipublib/1511733126_purple_hibiscus
+    ...
+
+  Not in catalog
+
+    Higher Love: Skiing the Seven Summits — Kit DesLauriers
+
+  ─────────────────────────────────
+
+  26 books  ·  2 ready  ·  23 requestable  ·  1 not found
+```
+
+## Getting started
+
+ShelfLife is not published to npm — clone and build it locally:
+
+```bash
+git clone https://github.com/sophiealula/library_goodreads_claude.git
+cd library_goodreads_claude
+npm install
+npm run build
+```
+
+Then run the interactive setup:
+
+```bash
+shelflife setup
+```
+
+This walks you through connecting your Goodreads account and finding your library:
+
+1. **Goodreads** — paste your profile URL or user ID (must be [public](https://www.goodreads.com/user/edit))
+2. **Library** — search by city name to find your BiblioCommons library
+3. **Branch** — enter a zip code or address to find your nearest branch
+
+Config is saved to `~/.shelfliferc.json` so you don't need to pass flags every time.
+
+After setup:
+
+```bash
+shelflife check
+```
+
+That's it — checks your to-read shelf at your configured library.
+
+## Commands
+
+### `setup` — Interactive configuration
+
+```bash
+shelflife setup
+```
+
+### `check` — Check book availability
+
+```bash
+shelflife check
+```
+
+Uses your saved config. Override any value with flags:
+
+```bash
+shelflife check --user <id> --library <subdomain> --branch "<name>" --shelf <shelf>
+```
+
+- `-u, --user` — Goodreads user ID
+- `-l, --library` — BiblioCommons library subdomain
+- `-b, --branch` — Specific branch (optional — omit to check all branches)
+- `-s, --shelf` — Goodreads shelf (default: `to-read`)
+
+### `shelves` — List your Goodreads shelves
+
+```bash
+shelflife shelves
+```
+
+Shows book counts for your `to-read`, `currently-reading`, and `read` shelves. Custom shelves can be checked with `shelflife check --shelf <name>`.
+
+### `libraries` — Search supported libraries
+
+```bash
+shelflife libraries            # list all
+shelflife libraries chicago    # search by city
+```
+
+### `branches` — List branches for a library
+
+```bash
+shelflife branches                        # uses configured library
+shelflife branches chipublib              # specify a library
+shelflife branches chipublib --near 60640 # find nearest by zip/address
+```
+
+## Library account features
+
+With your library card number and PIN, your AI assistant can also manage your library account through the MCP server.
+
+**Setup:** Set these environment variables before starting Claude:
+
+```bash
+export LIBRARY_CARD_NUMBER="your-card-number"
+export LIBRARY_PIN="your-pin"
+```
+
+You must also have run `shelflife setup` first.
+
+**Available tools:**
+
+| Tool | Description |
+|------|-------------|
+| `check_due_dates` | See active checkouts sorted by urgency — overdue, due soon, and others |
+| `list_holds` | View your holds with queue position and pickup location |
+| `cancel_hold` | Cancel a hold by ID |
+| `create_stagger_queue` | Queue multiple books to arrive one at a time — places the first hold immediately |
+| `check_stagger_status` | Check your queue and detect new checkouts — suggests placing the next hold |
+
+The stagger queue is not a background process — your assistant checks it when you ask and suggests the next action.
+
+**Note:** These features use unofficial BiblioCommons APIs and may vary by library system.
 
 ## How it works
 
@@ -97,3 +190,4 @@ Add to your Claude config (`~/.claude/claude_desktop_config.json` or Claude Code
 - Node.js 18+
 - A public Goodreads profile
 - A library that uses BiblioCommons for their catalog
+- (Optional) Library card number + PIN for account features

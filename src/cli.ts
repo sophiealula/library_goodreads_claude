@@ -184,6 +184,67 @@ program
   });
 
 program
+  .command("branches")
+  .description("List branches for a library")
+  .argument("[library]", "BiblioCommons library subdomain")
+  .option("-n, --near <location>", "Find branches near a zip code or address")
+  .action(async (library, opts) => {
+    const config = loadConfig();
+    const lib = library || config?.library;
+
+    if (!lib) {
+      console.log(`\n  Missing library. Pass a subdomain or run ${cyan("shelflife setup")}.\n`);
+      process.exit(1);
+    }
+
+    const libInfo = findLibrary(lib);
+    const label = libInfo ? libInfo.name : lib;
+    console.log(`\n${bold("shelflife")} ${dim("— branches")}\n`);
+    process.stdout.write(dim("  Loading branches... "));
+
+    const { fetchBranches, geocode, findNearestBranches } = await import("./branches.js");
+    const branches = await fetchBranches(lib);
+
+    if (branches.length === 0) {
+      console.log(dim("none found.\n"));
+      return;
+    }
+
+    console.log(dim(`${branches.length} at ${label}\n`));
+
+    if (opts.near) {
+      const coords = await geocode(opts.near);
+      if (coords) {
+        const nearest = findNearestBranches(branches, coords.lat, coords.lng, 10);
+        if (nearest.length === 0) {
+          console.log(dim("  No branch coordinates available. Showing all branches:\n"));
+          for (const b of branches) {
+            const addr = b.address ? dim(` — ${b.address}`) : "";
+            console.log(`  ${b.name}${addr}`);
+          }
+        } else {
+          for (const b of nearest) {
+            const addr = b.address ? dim(` — ${b.address}`) : "";
+            console.log(`  ${b.name}${addr}  ${dim(`${b.distance.toFixed(1)} mi`)}`);
+          }
+        }
+      } else {
+        console.log(dim(`  Couldn't locate "${opts.near}". Showing all branches:\n`));
+        for (const b of branches) {
+          const addr = b.address ? dim(` — ${b.address}`) : "";
+          console.log(`  ${b.name}${addr}`);
+        }
+      }
+    } else {
+      for (const b of branches) {
+        const addr = b.address ? dim(` — ${b.address}`) : "";
+        console.log(`  ${b.name}${addr}`);
+      }
+    }
+    console.log();
+  });
+
+program
   .command("shelves")
   .description("List available shelves for a Goodreads user")
   .option("-u, --user <id>", "Goodreads user ID")
