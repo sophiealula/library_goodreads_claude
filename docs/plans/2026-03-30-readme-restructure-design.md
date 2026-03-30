@@ -94,10 +94,12 @@ fetchBranches(), geocode(), and findNearestBranches() all exist in branches.ts. 
 `libraries` command in cli.ts is a direct template. ~40 lines to expose existing
 functionality. Completes the discovery story flagged by the normies review.
 
-### Omit `place_hold` from docs
-place_hold has a bug: pickup_branch accepts a name string but the API needs a numeric
-branch code, and the fallback is hardcoded to Chicago Uptown (code "79"). Documenting
-this would mislead non-Chicago users. Fix the bug separately, then document.
+### Fix and document `place_hold`
+~~place_hold had a bug: pickup_branch accepted a name string but the API needs a numeric
+branch code, and the fallback was hardcoded to Chicago Uptown (code "79").~~
+**Fixed:** placeHold() now resolves branch names to codes via fetchBranches(), falls back
+to configured branch from .shelfliferc.json, and errors explicitly if unresolvable.
+Documented in README alongside the other authenticated MCP tools.
 
 ### Sample output must be real
 Capture actual terminal output, not fabricated. Trim to ~5 books for readability.
@@ -113,6 +115,6 @@ Capture actual terminal output, not fabricated. Trim to ~5 books for readability
 ## Out of Scope
 
 - Publishing to npm (separate decision)
-- Fixing place_hold branch code bug (separate task)
+- ~~Fixing place_hold branch code bug~~ (completed during implementation)
 - Adding a web UI for non-technical users
 - npm audit / vulnerability fixes (separate task)

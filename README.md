@@ -23,7 +23,7 @@ Add to your MCP client config (e.g. Claude Desktop, Claude Code, Cursor, or any 
 }
 ```
 
-Replace `/absolute/path/to/shelflife` with the actual path where you cloned this repo. Requires [getting started](#getting-started) first.
+Replace `/absolute/path/to/shelflife` with the actual path where you cloned this repo. You'll need to clone and build the project first — see [getting started](#getting-started). (`tsx` is installed as a dev dependency when you run `npm install`.)
 
 Then just ask:
 
