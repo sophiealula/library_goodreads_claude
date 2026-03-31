@@ -8,14 +8,16 @@ import { searchLibraries } from "./libraries.js";
 import { findLibrary } from "./libraries.js";
 import type { AvailabilityResult, GoodreadsBook } from "./types.js";
 
-// ANSI helpers
-const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
-const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
-const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
-const clearLine = () => process.stdout.write("\x1b[2K\r");
+// ANSI helpers — respect NO_COLOR and non-TTY
+const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+const wrap = (code: string) => useColor ? (s: string) => `\x1b[${code}m${s}\x1b[0m` : (s: string) => s;
+const bold = wrap("1");
+const dim = wrap("2");
+const green = wrap("32");
+const yellow = wrap("33");
+const red = wrap("31");
+const cyan = wrap("36");
+const clearLine = () => { if (useColor) process.stdout.write("\x1b[2K\r"); };
 
 program
   .name("shelflife")
@@ -38,7 +40,8 @@ program
     const config = loadConfig();
     const userId = opts.user || config?.goodreadsUserId;
     const library = opts.library || config?.library;
-    const branch = opts.branch ?? config?.branch;
+    // Don't use saved branch if library was explicitly overridden to a different one
+    const branch = opts.branch ?? (opts.library && opts.library !== config?.library ? undefined : config?.branch);
     const shelf = opts.shelf || config?.shelf || "to-read";
 
     if (!userId || !library) {
@@ -89,6 +92,7 @@ program
       const atBranch = results.filter((r) => r.status === "at-branch");
       const inSystem = results.filter((r) => r.status === "in-system");
       const notFound = results.filter((r) => r.status === "not-found");
+      const errors = results.filter((r) => r.status === "error");
 
       // At branch
       if (atBranch.length > 0) {
@@ -122,6 +126,15 @@ program
         console.log();
       }
 
+      // Errors
+      if (errors.length > 0) {
+        console.log(red(`  Could not check\n`));
+        for (const r of errors) {
+          console.log(dim(`    ${r.book.title} — ${r.book.author}`));
+        }
+        console.log();
+      }
+
       // Summary line
       console.log(dim("  ─────────────────────────────────\n"));
       const parts = [];
@@ -131,6 +144,8 @@ program
         parts.push(yellow(`${inSystem.length} requestable`));
       if (notFound.length)
         parts.push(dim(`${notFound.length} not found`));
+      if (errors.length)
+        parts.push(red(`${errors.length} failed`));
 
       console.log(`  ${books.length} books  ${dim("·")}  ${parts.join(`  ${dim("·")}  `)}\n`);
     } catch (err) {
@@ -281,37 +296,10 @@ async function checkWithProgress(
   branch?: string
 ): Promise<AvailabilityResult[]> {
   const total = books.length;
-  let checked = 0;
-
-  // Wrap checkAvailability with progress tracking
-  // We'll do our own batching to show progress
-  const CONCURRENCY = 3;
-  const DELAY_MS = 400;
-  const results: AvailabilityResult[] = [];
+  process.stdout.write(`  ${dim(`Checking ${total} books...`)}`);
 
   const { checkAvailability } = await import("./library.js");
-
-  for (let i = 0; i < books.length; i += CONCURRENCY) {
-    const batch = books.slice(i, i + CONCURRENCY);
-
-    // Show progress
-    const current = batch[0];
-    const shortTitle =
-      current.title.length > 35
-        ? current.title.slice(0, 35) + "..."
-        : current.title;
-    process.stdout.write(
-      `\r  ${dim(`${checked}/${total}`)} ${dim(shortTitle.padEnd(40))}`
-    );
-
-    const batchResults = await checkAvailability(batch, library, branch);
-    results.push(...batchResults);
-    checked += batch.length;
-
-    if (i + CONCURRENCY < books.length) {
-      await new Promise((r) => setTimeout(r, DELAY_MS));
-    }
-  }
+  const results = await checkAvailability(books, library, branch);
 
   // Clear progress line
   clearLine();

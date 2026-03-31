@@ -21,6 +21,10 @@ function loadConfig(): Record<string, string> {
 
 const savedConfig = loadConfig();
 
+function isValidSubdomain(s: string): boolean {
+  return /^[a-z0-9-]+$/.test(s);
+}
+
 const server = new McpServer({
   name: "shelflife",
   version: "0.2.0",
@@ -68,6 +72,13 @@ server.tool(
         };
       }
 
+      if (!isValidSubdomain(lib)) {
+        return {
+          content: [{ type: "text" as const, text: "Invalid library subdomain. Use only lowercase letters, numbers, and hyphens." }],
+          isError: true,
+        };
+      }
+
       const result = await checkShelf({
         goodreadsUserId: userId,
         shelf: sh,
@@ -79,7 +90,7 @@ server.tool(
 
       if (result.atBranch.length > 0) {
         sections.push(
-          `## On the shelf at ${branch || library} (${result.atBranch.length})\n` +
+          `## On the shelf at ${br || lib} (${result.atBranch.length})\n` +
             result.atBranch
               .map(
                 (r) =>
@@ -90,8 +101,8 @@ server.tool(
       }
 
       if (result.inSystem.length > 0) {
-        const label = branch
-          ? `In the system, not at ${branch}`
+        const label = br
+          ? `In the system, not at ${br}`
           : "In the library system";
         sections.push(
           `## ${label} (${result.inSystem.length})\n` +
@@ -171,6 +182,13 @@ server.tool(
       if (!lib) {
         return {
           content: [{ type: "text" as const, text: "Missing library. Pass it as a parameter or run 'shelflife setup'." }],
+          isError: true,
+        };
+      }
+
+      if (!isValidSubdomain(lib)) {
+        return {
+          content: [{ type: "text" as const, text: "Invalid library subdomain. Use only lowercase letters, numbers, and hyphens." }],
           isError: true,
         };
       }
@@ -275,7 +293,7 @@ server.tool(
 
 server.tool(
   "check_due_dates",
-  "Check your active library checkouts and due dates. Shows overdue items, items due soon, and all checkouts sorted by urgency. Requires LIBRARY_CARD_NUMBER and LIBRARY_PIN environment variables.",
+  "Check your active library checkouts and due dates. Shows overdue items, items due soon, and all checkouts sorted by urgency. Requires LIBRARY_CARD_NUMBER and LIBRARY_PIN environment variables and a .shelfliferc.json config (run 'shelflife setup').",
   {},
   async () => {
     try {
@@ -329,7 +347,7 @@ server.tool(
 
 server.tool(
   "list_holds",
-  "List your current library holds with queue positions and status. Requires LIBRARY_CARD_NUMBER and LIBRARY_PIN environment variables.",
+  "List your current library holds with queue positions, status, and IDs needed for cancel_hold. Requires LIBRARY_CARD_NUMBER and LIBRARY_PIN environment variables and a .shelfliferc.json config (run 'shelflife setup').",
   {},
   async () => {
     try {
@@ -359,7 +377,7 @@ server.tool(
 
 server.tool(
   "place_hold",
-  "Place a hold on a book at your library. Use a bib ID from check_shelf or check_book results. Requires LIBRARY_CARD_NUMBER and LIBRARY_PIN environment variables.",
+  "Place a real hold on the user's library account. Confirm with the user before calling. Use a bib ID from check_shelf or check_book results. Requires LIBRARY_CARD_NUMBER and LIBRARY_PIN environment variables and a .shelfliferc.json config (run 'shelflife setup').",
   {
     bib_id: z.string().describe("BiblioCommons bib ID (e.g., S126C1075024)"),
     pickup_branch: z.string().optional().describe("Pickup branch name (defaults to configured branch)"),
@@ -392,7 +410,7 @@ server.tool(
 
 server.tool(
   "cancel_hold",
-  "Cancel an active hold on your library account. Requires the hold ID and bib ID from list_holds.",
+  "Cancel an active hold on the user's library account. Confirm with the user before calling. Requires the hold ID and bib ID from list_holds. Requires LIBRARY_CARD_NUMBER and LIBRARY_PIN environment variables and a .shelfliferc.json config.",
   {
     hold_id: z.string().describe("Hold ID (from list_holds)"),
     bib_id: z.string().describe("BiblioCommons bib ID (from list_holds)"),

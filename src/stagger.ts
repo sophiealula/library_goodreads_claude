@@ -60,9 +60,10 @@ export function advanceQueue(queue: StaggerQueue, checkedOutBibId: string): {
     item.status = "checked-out";
   }
 
+  // Return next waiting book but DON'T mark it as hold-placed yet —
+  // the caller should only update status after actually placing the hold
   const nextHold = getNextWaiting(queue);
   if (nextHold) {
-    nextHold.status = "hold-placed";
     queue.triggerOnCheckoutOf = nextHold.bibId;
   } else {
     queue.triggerOnCheckoutOf = undefined;

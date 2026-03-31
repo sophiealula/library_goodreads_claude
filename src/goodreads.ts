@@ -3,6 +3,7 @@ import type { GoodreadsBook } from "./types.js";
 
 const GOODREADS_RSS_URL = "https://www.goodreads.com/review/list_rss";
 const PER_PAGE = 100;
+const MAX_PAGES = 50; // Safety cap: 5000 books max
 
 export async function fetchShelf(
   userId: string,
@@ -11,9 +12,17 @@ export async function fetchShelf(
   const allBooks: GoodreadsBook[] = [];
   let page = 1;
 
-  while (true) {
+  while (page <= MAX_PAGES) {
     const url = `${GOODREADS_RSS_URL}/${userId}?shelf=${encodeURIComponent(shelf)}&per_page=${PER_PAGE}&page=${page}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+
+    let res: Response;
+    try {
+      res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    } catch (err) {
+      throw new Error(
+        `Network error fetching Goodreads shelf: ${err instanceof Error ? err.message : "request failed"}`
+      );
+    }
     if (!res.ok) {
       throw new Error(
         `Failed to fetch Goodreads shelf (${res.status}). Make sure the profile is public.`

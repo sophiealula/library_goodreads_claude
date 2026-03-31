@@ -10,12 +10,14 @@ import type { Branch } from "./branches.js";
 
 const CONFIG_PATH = resolve(homedir(), ".shelfliferc.json");
 
-// ANSI
-const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
-const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
+// ANSI — respect NO_COLOR and non-TTY
+const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+const wrap = (code: string) => useColor ? (s: string) => `\x1b[${code}m${s}\x1b[0m` : (s: string) => s;
+const bold = wrap("1");
+const dim = wrap("2");
+const cyan = wrap("36");
+const green = wrap("32");
+const yellow = wrap("33");
 
 export interface Config {
   goodreadsUserId: string;

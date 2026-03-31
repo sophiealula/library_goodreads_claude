@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "shelflife": "dist/cli.js"
+    "shelflife": "dist/cli.js",
+    "shelflife-mcp": "dist/mcp.js"
   },
   "scripts": {
     "build": "tsc && chmod +x dist/cli.js dist/mcp.js",
