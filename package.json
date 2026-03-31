@@ -8,12 +8,18 @@
     "shelflife": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/cli.js dist/mcp.js",
     "dev": "tsx src/cli.ts",
     "mcp": "tsx src/mcp.ts",
     "start": "node dist/cli.js"
   },
-  "keywords": ["goodreads", "library", "bibliocommons", "books", "mcp"],
+  "keywords": [
+    "goodreads",
+    "library",
+    "bibliocommons",
+    "books",
+    "mcp"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18"
@@ -21,7 +27,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "commander": "^13.1.0",
-    "fast-xml-parser": "^5.2.0"
+    "fast-xml-parser": "^5.2.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

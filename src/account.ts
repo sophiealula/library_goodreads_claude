@@ -56,6 +56,7 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(fullUrl, {
     ...init,
     headers: { ...headers, ...init?.headers },
+    signal: AbortSignal.timeout(15000),
   });
 
   // Retry once with fresh session on 401
@@ -66,6 +67,7 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
     return fetch(`${GATEWAY_BASE}/${retry.session.library}${url}`, {
       ...init,
       headers: { ...retry.headers, ...init?.headers },
+      signal: AbortSignal.timeout(15000),
     });
   }
 

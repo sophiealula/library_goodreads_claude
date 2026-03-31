@@ -34,7 +34,7 @@ export function loadConfig(): Config | null {
 }
 
 export function saveConfig(config: Config): void {
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
+  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n", { mode: 0o600 });
 }
 
 export async function runSetup(): Promise<Config> {

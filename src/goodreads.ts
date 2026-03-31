@@ -13,7 +13,7 @@ export async function fetchShelf(
 
   while (true) {
     const url = `${GOODREADS_RSS_URL}/${userId}?shelf=${encodeURIComponent(shelf)}&per_page=${PER_PAGE}&page=${page}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) {
       throw new Error(
         `Failed to fetch Goodreads shelf (${res.status}). Make sure the profile is public.`

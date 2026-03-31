@@ -20,7 +20,7 @@ const clearLine = () => process.stdout.write("\x1b[2K\r");
 program
   .name("shelflife")
   .description("Check if your Goodreads books are at your local library")
-  .version("0.1.0");
+  .version("0.2.0");
 
 // Default command: check (uses config if available)
 program
@@ -338,5 +338,11 @@ function printBook(r: AvailabilityResult) {
     console.log(`    ${dim(details.join("  ·  "))}`);
   }
 }
+
+program.on("command:*", (operands) => {
+  console.log(`\n  Unknown command: ${operands[0]}\n`);
+  console.log(dim("  Available commands: setup, check, shelves, libraries, branches\n"));
+  process.exit(1);
+});
 
 program.parse();

@@ -107,9 +107,9 @@ async function searchRss(
 
   const res = await fetch(url, {
     headers: {
-      "User-Agent":
-        "shelflife/0.1.0 (book availability checker; github.com/shelflife)",
+      "User-Agent": "shelflife/0.2.0",
     },
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) {
@@ -177,9 +177,9 @@ async function tryHtmlSearch(
   try {
     res = await fetch(url, {
       headers: {
-        "User-Agent":
-          "shelflife/0.2.0 (book availability checker; github.com/shelflife)",
+        "User-Agent": "shelflife/0.2.0",
       },
+      signal: AbortSignal.timeout(15000),
     });
   } catch {
     return "network-error";

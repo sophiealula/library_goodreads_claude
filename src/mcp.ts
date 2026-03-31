@@ -342,7 +342,7 @@ server.tool(
 
       const lines = holds.map((h) => {
         const pos = h.holdsPosition ? `#${h.holdsPosition} of ${h.totalHolds} holds on ${h.totalCopies} copies` : "";
-        return `- **${h.title}** by ${h.author} — ${pos} (${h.status}) — pickup: ${h.pickupLocation}`;
+        return `- **${h.title}** by ${h.author} — ${pos} (${h.status}) — pickup: ${h.pickupLocation}\n  Hold ID: ${h.id} | Bib ID: ${h.bibId}`;
       });
 
       return {
@@ -439,9 +439,17 @@ server.tool(
       const first = queue.queue[0];
       const holdResult = await placeHold(first.bibId);
 
+      if (!holdResult.success) {
+        // Don't persist queue with wrong state — hold wasn't actually placed
+        return {
+          content: [{ type: "text" as const, text: `Failed to place hold on **${first.title}**: ${holdResult.message}\n\nStagger queue was not created.` }],
+          isError: true,
+        };
+      }
+
       const remaining = queue.queue.slice(1);
       const lines = [
-        `Hold placed on **${first.title}** by ${first.author}${holdResult.success ? "" : ` (${holdResult.message})`}`,
+        `Hold placed on **${first.title}** by ${first.author}`,
         "",
         `**Queued for later (${remaining.length}):**`,
         ...remaining.map((b, i) => `${i + 1}. ${b.title} by ${b.author}`),

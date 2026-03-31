@@ -20,7 +20,8 @@ async function fetchFromGateway(library: string): Promise<Branch[]> {
 
   try {
     const res = await fetch(url, {
-      headers: { "User-Agent": "shelflife/0.1.0 (book availability checker)" },
+      headers: { "User-Agent": "shelflife/0.2.0" },
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
 
@@ -61,7 +62,8 @@ async function fetchFromSearchPage(library: string): Promise<Branch[]> {
 
   try {
     const res = await fetch(url, {
-      headers: { "User-Agent": "shelflife/0.1.0 (book availability checker)" },
+      headers: { "User-Agent": "shelflife/0.2.0" },
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
 
@@ -100,8 +102,9 @@ export async function geocode(query: string): Promise<{ lat: number; lng: number
   try {
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "shelflife/0.1.0 (book availability checker)",
+        "User-Agent": "shelflife/0.2.0",
       },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
 

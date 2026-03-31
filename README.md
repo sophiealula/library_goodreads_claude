@@ -2,7 +2,7 @@
 
 Check if books on your Goodreads shelf are available at your local library.
 
-Works with 115+ public libraries across the US, Canada, and New Zealand that use [BiblioCommons](https://www.bibliocommons.com/) for their catalog — including Chicago, San Francisco, Boston, Seattle, Toronto, Austin, and [many more](#libraries--search-supported-libraries). Run `shelflife libraries` to see the full list.
+Works with 115+ public libraries across the US, Canada, and New Zealand that use [BiblioCommons](https://www.bibliocommons.com/) for their catalog — including Chicago, San Francisco, Boston, Seattle, Toronto, Austin, and [many more](#libraries----search-supported-libraries). Run `shelflife libraries` to see the full list.
 
 ## Two ways to use it
 
@@ -149,11 +149,19 @@ shelflife branches chipublib              # specify a library
 shelflife branches chipublib --near 60640 # find nearest by zip/address
 ```
 
-## Library account features
+## MCP tools
 
-With your library card number and PIN, your AI assistant can also manage your library account through the MCP server.
+The MCP server provides 9 tools. The first 3 work with just `shelflife setup`:
 
-**Setup:** Set these environment variables before starting Claude:
+| Tool | Description |
+|------|-------------|
+| `check_shelf` | Check all books from a Goodreads shelf against a library — grouped by availability |
+| `check_book` | Check a single book by title, author, or ISBN |
+| `list_shelves` | List book counts for your Goodreads shelves |
+
+### Library account features
+
+With your library card number and PIN, your assistant can also manage your library account:
 
 ```bash
 export LIBRARY_CARD_NUMBER="your-card-number"
@@ -162,14 +170,12 @@ export LIBRARY_PIN="your-pin"
 
 You must also have run `shelflife setup` first.
 
-**Available tools:**
-
 | Tool | Description |
 |------|-------------|
 | `check_due_dates` | See active checkouts sorted by urgency — overdue, due soon, and others |
-| `list_holds` | View your holds with queue position and pickup location |
+| `list_holds` | View your holds with queue position, pickup location, and IDs for cancellation |
 | `place_hold` | Place a hold on a book by bib ID — picks up at your configured branch |
-| `cancel_hold` | Cancel a hold by ID |
+| `cancel_hold` | Cancel a hold by hold ID and bib ID (from `list_holds`) |
 | `create_stagger_queue` | Queue multiple books to arrive one at a time — places the first hold immediately |
 | `check_stagger_status` | Check your queue and detect new checkouts — suggests placing the next hold |
 

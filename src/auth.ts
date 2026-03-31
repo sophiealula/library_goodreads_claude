@@ -46,6 +46,7 @@ export async function login(config: { library: string; cardNumber: string; pin: 
       username: config.cardNumber,
       password: config.pin,
     }),
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!res.ok) {
@@ -89,6 +90,7 @@ async function verifySession(session: AuthSession): Promise<boolean> {
           Authorization: `Bearer ${session.authToken}`,
           "User-Agent": "shelflife/0.2.0",
         },
+        signal: AbortSignal.timeout(10000),
       }
     );
     if (!res.ok) return false;
