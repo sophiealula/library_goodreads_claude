@@ -204,7 +204,7 @@ export async function runSetup(): Promise<Config> {
   if (selectedBranch) {
     console.log(`  ${dim("Branch")}      ${selectedBranch}`);
   }
-  console.log(`\n  Run ${cyan("shelflife")} to check availability.\n`);
+  console.log(`\n  Run ${cyan("shelflife check")} to check availability.\n`);
 
   return config;
 }

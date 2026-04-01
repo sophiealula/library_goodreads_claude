@@ -17,11 +17,15 @@ Add to your MCP client config (e.g. Claude Desktop, Claude Code, Cursor, or any 
   "mcpServers": {
     "shelflife": {
       "command": "node",
-      "args": ["/absolute/path/to/shelflife/dist/mcp.js"]
+      "args": ["/Users/you/library_goodreads_claude/dist/mcp.js"]
     }
   }
 }
 ```
+
+Replace the path with the full absolute path to `dist/mcp.js` in your clone. `~` doesn't work in most MCP configs — use the expanded path (e.g. `/Users/yourname/...`).
+
+You must run `shelflife setup` first — the MCP server reads the same config file.
 
 Then just ask:
 
@@ -173,7 +177,7 @@ Add them to your MCP client config:
   "mcpServers": {
     "shelflife": {
       "command": "node",
-      "args": ["/absolute/path/to/shelflife/dist/mcp.js"],
+      "args": ["/Users/you/library_goodreads_claude/dist/mcp.js"],
       "env": {
         "LIBRARY_CARD_NUMBER": "your-card-number",
         "LIBRARY_PIN": "your-pin"
