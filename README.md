@@ -2,7 +2,7 @@
 
 Check if books on your Goodreads shelf are available at your local library.
 
-Works with 115+ public libraries across the US, Canada, and New Zealand that use [BiblioCommons](https://www.bibliocommons.com/) for their catalog — including Chicago, San Francisco, Boston, Seattle, Toronto, Austin, and [many more](#libraries----search-supported-libraries). Run `shelflife libraries` to see the full list.
+Works with 116 public libraries across the US, Canada, and New Zealand that use [BiblioCommons](https://www.bibliocommons.com/) for their catalog — including Chicago, San Francisco, Boston, Seattle, Toronto, Austin, and many more. Run `shelflife libraries` to see the full list.
 
 ## Two ways to use it
 
@@ -16,8 +16,8 @@ Add to your MCP client config (e.g. Claude Desktop, Claude Code, Cursor, or any 
 {
   "mcpServers": {
     "shelflife": {
-      "command": "npx",
-      "args": ["tsx", "/absolute/path/to/shelflife/src/mcp.ts"]
+      "command": "node",
+      "args": ["/absolute/path/to/shelflife/dist/mcp.js"]
     }
   }
 }
@@ -70,13 +70,14 @@ shelflife
 
 ## Getting started
 
-Clone and build locally:
+Clone, build, and link:
 
 ```bash
 git clone https://github.com/sophiealula/library_goodreads_claude.git
 cd library_goodreads_claude
 npm install
 npm run build
+npm link
 ```
 
 Then run the interactive setup:
@@ -84,6 +85,8 @@ Then run the interactive setup:
 ```bash
 shelflife setup
 ```
+
+> **Note:** `npm link` makes the `shelflife` command available globally. If you skip it, use `npx shelflife` instead.
 
 This walks you through connecting your Goodreads account and finding your library:
 
@@ -162,6 +165,25 @@ The MCP server provides 9 tools. The first 3 work with just `shelflife setup`:
 ### Library account features
 
 With your library card number and PIN, your assistant can also manage your library account:
+
+Add them to your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "shelflife": {
+      "command": "node",
+      "args": ["/absolute/path/to/shelflife/dist/mcp.js"],
+      "env": {
+        "LIBRARY_CARD_NUMBER": "your-card-number",
+        "LIBRARY_PIN": "your-pin"
+      }
+    }
+  }
+}
+```
+
+Or set them in your shell for CLI use:
 
 ```bash
 export LIBRARY_CARD_NUMBER="your-card-number"
