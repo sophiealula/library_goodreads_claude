@@ -225,7 +225,7 @@ server.tool(
 
       let text: string;
       if (r.status === "at-branch") {
-        text = `Found at ${br}!${r.callNumber ? ` Call #: ${r.callNumber}` : ""}${r.bibId ? ` [bib: ${r.bibId}]` : ""}${r.catalogUrl ? `\n${r.catalogUrl}` : ""}`;
+        text = `Found at ${br || lib}!${r.callNumber ? ` Call #: ${r.callNumber}` : ""}${r.bibId ? ` [bib: ${r.bibId}]` : ""}${r.catalogUrl ? `\n${r.catalogUrl}` : ""}`;
       } else if (r.status === "in-system") {
         text = `In the library system${br ? `, but not at ${br}` : ""}.${r.bibId ? ` [bib: ${r.bibId}]` : ""}${r.catalogUrl ? ` Place a hold: ${r.catalogUrl}` : ""}`;
       } else if (r.status === "error") {
@@ -500,7 +500,7 @@ server.tool(
   },
   async ({ place_next }) => {
     try {
-      const { loadQueue, advanceQueue, saveQueue, getNextWaiting } = await import("./stagger.js");
+      const { loadQueue, advanceQueue, saveQueue } = await import("./stagger.js");
       const { fetchCheckouts } = await import("./account.js");
 
       const queue = loadQueue();
