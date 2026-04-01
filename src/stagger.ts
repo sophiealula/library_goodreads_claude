@@ -70,7 +70,6 @@ export function advanceQueue(queue: StaggerQueue, checkedOutBibId: string): {
   }
 
   queue.lastChecked = new Date().toISOString();
-  saveQueue(queue);
 
   return { queue, nextHold };
 }

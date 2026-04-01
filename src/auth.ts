@@ -24,7 +24,20 @@ export function getAuthConfig(): { library: string; cardNumber: string; pin: str
       "No .shelfliferc.json found in home directory. Run 'shelflife setup' first."
     );
   }
-  const config = JSON.parse(readFileSync(configPath, "utf-8"));
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(readFileSync(configPath, "utf-8"));
+  } catch {
+    throw new Error("Config file ~/.shelfliferc.json is corrupted. Run 'shelflife setup' to recreate it.");
+  }
+
+  if (!config.library || typeof config.library !== "string") {
+    throw new Error("Config file is missing 'library'. Run 'shelflife setup' to fix it.");
+  }
+
+  if (!/^[a-z0-9-]+$/.test(config.library)) {
+    throw new Error("Invalid library subdomain in config. Run 'shelflife setup' to fix it.");
+  }
 
   return { library: config.library, cardNumber, pin };
 }
@@ -65,7 +78,15 @@ export async function login(config: { library: string; cardNumber: string; pin: 
     throw new Error("Login succeeded but response was missing expected fields");
   }
 
-  const cookies = (res.headers.getSetCookie?.() ?? [])
+  // getSetCookie() requires Node 20+; fall back to raw header on Node 18
+  let rawCookies: string[];
+  if (typeof res.headers.getSetCookie === "function") {
+    rawCookies = res.headers.getSetCookie();
+  } else {
+    const raw = res.headers.get("set-cookie") ?? "";
+    rawCookies = raw ? raw.split(/, (?=[^;]+=[^;]+;)/) : [];
+  }
+  const cookies = rawCookies
     .map((c) => c.split(";")[0])
     .join("; ");
 

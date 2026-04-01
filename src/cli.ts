@@ -24,9 +24,9 @@ program
   .description("Check if your Goodreads books are at your local library")
   .version("0.2.0");
 
-// Default command: check (uses config if available)
+// Default command: check (run when no subcommand given)
 program
-  .command("check", { isDefault: true })
+  .command("check")
   .description("Check availability of your Goodreads shelf at a library")
   .option("-u, --user <id>", "Goodreads user ID")
   .option(
@@ -333,4 +333,12 @@ program.on("command:*", (operands) => {
   process.exit(1);
 });
 
-program.parse();
+// No subcommand → run check
+if (process.argv.length <= 2) {
+  process.argv.push("check");
+}
+
+program.parseAsync().catch((err) => {
+  console.error(`\n  Error: ${err instanceof Error ? err.message : err}\n`);
+  process.exit(1);
+});

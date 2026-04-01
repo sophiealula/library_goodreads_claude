@@ -19,11 +19,19 @@ export async function fetchShelf(
     try {
       res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     } catch (err) {
+      // If we already have books from earlier pages, return them
+      if (allBooks.length > 0) return allBooks;
       throw new Error(
         `Network error fetching Goodreads shelf: ${err instanceof Error ? err.message : "request failed"}`
       );
     }
     if (!res.ok) {
+      if (allBooks.length > 0) return allBooks;
+      if (res.status === 404) {
+        throw new Error(
+          `Goodreads user not found (404). Check your user ID.`
+        );
+      }
       throw new Error(
         `Failed to fetch Goodreads shelf (${res.status}). Make sure the profile is public.`
       );

@@ -8,12 +8,17 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { checkShelf, fetchShelf } from "./index.js";
 
-// Load saved config for defaults
+// Load saved config for defaults — validate on load
 function loadConfig(): Record<string, string> {
   const configPath = resolve(homedir(), ".shelfliferc.json");
   if (!existsSync(configPath)) return {};
   try {
-    return JSON.parse(readFileSync(configPath, "utf-8"));
+    const raw = JSON.parse(readFileSync(configPath, "utf-8"));
+    const config: Record<string, string> = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (typeof v === "string") config[k] = v;
+    }
+    return config;
   } catch {
     return {};
   }
@@ -220,9 +225,11 @@ server.tool(
 
       let text: string;
       if (r.status === "at-branch") {
-        text = `Found at ${br}!${r.callNumber ? ` Call #: ${r.callNumber}` : ""}${r.catalogUrl ? `\n${r.catalogUrl}` : ""}`;
+        text = `Found at ${br}!${r.callNumber ? ` Call #: ${r.callNumber}` : ""}${r.bibId ? ` [bib: ${r.bibId}]` : ""}${r.catalogUrl ? `\n${r.catalogUrl}` : ""}`;
       } else if (r.status === "in-system") {
-        text = `In the library system${br ? `, but not at ${br}` : ""}.${r.catalogUrl ? ` Place a hold: ${r.catalogUrl}` : ""}`;
+        text = `In the library system${br ? `, but not at ${br}` : ""}.${r.bibId ? ` [bib: ${r.bibId}]` : ""}${r.catalogUrl ? ` Place a hold: ${r.catalogUrl}` : ""}`;
+      } else if (r.status === "error") {
+        text = "Search failed — network error or rate limit. Try again.";
       } else {
         text = "Not found in this library's catalog.";
       }
@@ -487,11 +494,13 @@ server.tool(
 
 server.tool(
   "check_stagger_status",
-  "Check your hold stagger queue. Detects if you've checked out books since last check and suggests placing the next hold.",
-  {},
-  async () => {
+  "Check your hold stagger queue. Detects if you've checked out books since last check and suggests placing the next hold. Call with place_next=true to place the next hold and advance the queue.",
+  {
+    place_next: z.boolean().optional().describe("Set to true to place the next hold and advance the queue"),
+  },
+  async ({ place_next }) => {
     try {
-      const { loadQueue, advanceQueue } = await import("./stagger.js");
+      const { loadQueue, advanceQueue, saveQueue, getNextWaiting } = await import("./stagger.js");
       const { fetchCheckouts } = await import("./account.js");
 
       const queue = loadQueue();
@@ -517,19 +526,15 @@ server.tool(
         };
       }
 
+      // Advance queue state in memory (marks checked-out items)
       let result = { queue, nextHold: null as null | { bibId: string; title: string; author: string } };
       for (const co of newCheckouts) {
         result = advanceQueue(result.queue, co.bibId);
       }
 
-      if (result.nextHold) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: `You checked out **${newCheckouts.map((c) => c.title).join(", ")}**!\n\nNext in your queue: **${result.nextHold.title}** by ${result.nextHold.author}\n\nWant me to place this hold now?`,
-          }],
-        };
-      } else {
+      if (!result.nextHold) {
+        // All done — save final state
+        saveQueue(result.queue);
         return {
           content: [{
             type: "text" as const,
@@ -537,6 +542,43 @@ server.tool(
           }],
         };
       }
+
+      if (!place_next) {
+        // Report only — don't persist state until hold is placed
+        return {
+          content: [{
+            type: "text" as const,
+            text: `You checked out **${newCheckouts.map((c) => c.title).join(", ")}**!\n\nNext in your queue: **${result.nextHold.title}** by ${result.nextHold.author} [bib: ${result.nextHold.bibId}]\n\nWant me to place this hold? Call again with place_next=true.`,
+          }],
+        };
+      }
+
+      // Place the next hold and persist state
+      const { placeHold } = await import("./account.js");
+      const holdResult = await placeHold(result.nextHold.bibId);
+
+      if (!holdResult.success) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: `You checked out **${newCheckouts.map((c) => c.title).join(", ")}**.\n\nFailed to place hold on **${result.nextHold.title}**: ${holdResult.message}\n\nQueue state was not updated — try again later.`,
+          }],
+          isError: true,
+        };
+      }
+
+      // Hold succeeded — mark as hold-placed and save
+      const nextItem = result.queue.queue.find((q) => q.bibId === result.nextHold!.bibId);
+      if (nextItem) nextItem.status = "hold-placed";
+      saveQueue(result.queue);
+
+      const remaining = result.queue.queue.filter((q) => q.status === "waiting");
+      return {
+        content: [{
+          type: "text" as const,
+          text: `You checked out **${newCheckouts.map((c) => c.title).join(", ")}**.\n\nHold placed on **${result.nextHold.title}** by ${result.nextHold.author}!${remaining.length > 0 ? `\n\n${remaining.length} more book(s) waiting in your queue.` : "\n\nThat's the last hold — queue complete after this one!"}`,
+        }],
+      };
     } catch (err) {
       return {
         content: [{ type: "text" as const, text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
