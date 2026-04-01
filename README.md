@@ -95,8 +95,7 @@ shelflife setup
 This walks you through connecting your Goodreads account and finding your library:
 
 1. **Goodreads** — paste your profile URL or user ID (must be [public](https://www.goodreads.com/user/edit))
-2. **Library** — search by city name to find your library (verifies the connection works)
-3. **Branch** — enter a zip code or address to find your nearest branch
+2. **Library** — enter your zip code to find the nearest supported library and branch
 
 Config is saved to `~/.shelfliferc.json` so you don't need to pass flags every time.
 

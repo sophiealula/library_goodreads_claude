@@ -93,11 +93,18 @@ async function fetchFromSearchPage(library: string): Promise<Branch[]> {
   }
 }
 
-export async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
+export interface GeocodeResult {
+  lat: number;
+  lng: number;
+  city?: string;
+  state?: string;
+}
+
+export async function geocode(query: string): Promise<GeocodeResult | null> {
   // Add country hint for zip codes and US addresses
   const isZip = /^\d{5}(-\d{4})?$/.test(query.trim());
   const countryParam = isZip ? "&countrycodes=us,ca" : "";
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1${countryParam}`;
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1${countryParam}`;
 
   try {
     const res = await fetch(url, {
@@ -108,12 +115,17 @@ export async function geocode(query: string): Promise<{ lat: number; lng: number
     });
     if (!res.ok) return null;
 
-    const results = await res.json() as Array<Record<string, string>>;
+    const results = await res.json() as Array<Record<string, unknown>>;
     if (results.length === 0) return null;
 
+    const r = results[0];
+    const addr = r.address as Record<string, string> | undefined;
+
     return {
-      lat: parseFloat(results[0].lat),
-      lng: parseFloat(results[0].lon),
+      lat: parseFloat(String(r.lat)),
+      lng: parseFloat(String(r.lon)),
+      city: addr?.city || addr?.town || addr?.village,
+      state: addr?.state,
     };
   } catch {
     return null;

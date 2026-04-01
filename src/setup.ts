@@ -3,7 +3,7 @@ import { stdin, stdout } from "node:process";
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { homedir } from "node:os";
-import { searchLibraries, LIBRARIES } from "./libraries.js";
+import { searchLibraries } from "./libraries.js";
 import { fetchBranches, geocode, findNearestBranches } from "./branches.js";
 import { fetchShelf } from "./goodreads.js";
 import type { Branch } from "./branches.js";
@@ -90,97 +90,112 @@ export async function runSetup(): Promise<Config> {
     }
   }
 
-  // ── Step 2: Library ───────────────────────────────
+  // ── Step 2: Library & Branch (zip-first) ──────────
 
-  console.log(bold("  2. Library\n"));
+  console.log(bold("  2. Your library\n"));
 
   let selectedLibrary = "";
   let libraryName = "";
+  let selectedBranch: string | undefined;
 
   while (!selectedLibrary) {
-    const query = await rl.question(
-      `  ${dim("What city is your library in?")}\n  > `
+    const input = await rl.question(
+      `  ${dim("What's your zip code?")}\n  > `
     );
+    const trimmed = input.trim();
+    if (!trimmed) continue;
 
-    const results = searchLibraries(query.trim());
+    process.stdout.write(dim("\n  Finding your library... "));
+
+    const coords = await geocode(trimmed);
+    if (!coords) {
+      console.log(yellow("couldn't locate that."));
+      console.log(dim("  Try a 5-digit US zip code or Canadian postal code.\n"));
+      continue;
+    }
+
+    // Search libraries by city name from geocode
+    let results: ReturnType<typeof searchLibraries> = [];
+    if (coords.city) {
+      results = searchLibraries(coords.city);
+    }
+    // If no city match, try state
+    if (results.length === 0 && coords.state) {
+      results = searchLibraries(coords.state);
+    }
 
     if (results.length === 0) {
-      console.log(dim("\n  No matching library found."));
+      console.log(yellow("no supported library found near that zip."));
       console.log(dim("  Your library needs to use BiblioCommons for its catalog."));
-      console.log(dim("  If you know the subdomain, enter it directly:\n"));
+      console.log(dim("  Run 'shelflife libraries' to see all supported libraries.\n"));
 
+      console.log(dim("  Know your library's subdomain? Enter it directly, or try another zip:\n"));
       const direct = await rl.question("  > ");
       const d = direct.trim().toLowerCase();
-      if (d && !d.includes(" ")) {
+      if (d && !d.includes(" ") && !/^\d/.test(d)) {
         selectedLibrary = d;
         libraryName = d;
       }
       continue;
     }
 
-    if (results.length === 1) {
-      selectedLibrary = results[0].subdomain;
-      libraryName = results[0].name;
-      console.log(`\n  ${green("→")} ${results[0].name}\n`);
-    } else {
-      console.log();
+    // Pick library system (auto if only one)
+    let lib = results[0];
+    if (results.length > 1) {
+      console.log(dim(`${results.length} libraries found\n`));
       for (let i = 0; i < results.length; i++) {
         console.log(
           `  ${dim(`${i + 1}.`)} ${results[i].name} ${dim(`— ${results[i].location}`)}`
         );
       }
       console.log();
-
       const choice = await rl.question(dim("  Which one? ") + "\n  > ");
       const num = parseInt(choice.trim());
       if (num >= 1 && num <= results.length) {
-        selectedLibrary = results[num - 1].subdomain;
-        libraryName = results[num - 1].name;
-        console.log(`\n  ${green("→")} ${results[num - 1].name}\n`);
+        lib = results[num - 1];
       }
     }
-  }
 
-  // Verify library is reachable
-  process.stdout.write(dim("  Checking connection... "));
-  const libraryOk = await verifyLibrary(selectedLibrary);
-  if (!libraryOk) {
-    console.log(yellow("couldn't reach this library's catalog."));
-    console.log(dim("  This library may have migrated away from BiblioCommons."));
-    console.log(dim("  ShelfLife may not work correctly with this library.\n"));
-  } else {
-    console.log(green("connected\n"));
-  }
+    selectedLibrary = lib.subdomain;
+    libraryName = lib.name;
+    console.log(`\n  ${green("→")} ${libraryName}\n`);
 
-  // ── Step 3: Branch ────────────────────────────────
-
-  console.log(bold("  3. Branch\n"));
-  process.stdout.write(dim("  Loading branches... "));
-
-  const branches = await fetchBranches(selectedLibrary);
-  let selectedBranch: string | undefined;
-
-  if (branches.length === 0) {
-    console.log(dim("couldn't load branches. Skipping.\n"));
-  } else {
-    console.log(dim(`found ${branches.length}\n`));
-
-    console.log(
-      dim("  Enter your zip code, address, or branch name")
-    );
-    console.log(
-      dim("  to find the nearest branch. Or press Enter to skip.\n")
-    );
-
-    const input = await rl.question("  > ");
-    const trimmed = input.trim();
-
-    if (trimmed) {
-      selectedBranch = await resolveBranch(trimmed, branches, rl);
+    // Verify library is reachable
+    process.stdout.write(dim("  Checking connection... "));
+    const libraryOk = await verifyLibrary(selectedLibrary);
+    if (!libraryOk) {
+      console.log(yellow("couldn't reach this library's catalog."));
+      console.log(dim("  This library may have migrated away from BiblioCommons."));
+      console.log(dim("  ShelfLife may not work correctly with this library.\n"));
+    } else {
+      console.log(green("connected\n"));
     }
 
-    if (!selectedBranch) {
-      console.log(dim("  No branch selected — will check all branches.\n"));
+    // Find nearest branches using the coordinates we already have
+    process.stdout.write(dim("  Loading branches... "));
+    const branches = await fetchBranches(selectedLibrary);
+
+    if (branches.length === 0) {
+      console.log(dim("couldn't load branches.\n"));
+    } else {
+      const nearest = findNearestBranches(branches, coords.lat, coords.lng, 5);
+      if (nearest.length > 0) {
+        console.log(dim("done\n"));
+        selectedBranch = await pickBranch(
+          nearest.map((b) => ({ ...b, _distance: b.distance })),
+          rl
+        );
+      } else {
+        console.log(dim(`found ${branches.length}\n`));
+        selectedBranch = await pickBranch(
+          branches.slice(0, 10).map((b) => ({ ...b, _distance: undefined })),
+          rl
+        );
+      }
+
+      if (!selectedBranch) {
+        console.log(dim("  No branch selected — will check all branches.\n"));
+      }
     }
   }
 
@@ -207,57 +222,6 @@ export async function runSetup(): Promise<Config> {
   console.log(`\n  Run ${cyan("shelflife check")} to check availability.\n`);
 
   return config;
-}
-
-async function resolveBranch(
-  input: string,
-  branches: Branch[],
-  rl: readline.Interface
-): Promise<string | undefined> {
-  // First try: exact or fuzzy name match
-  const q = input.toLowerCase();
-  const nameMatches = branches.filter((b) =>
-    b.name.toLowerCase().includes(q)
-  );
-
-  if (nameMatches.length === 1) {
-    const b = nameMatches[0];
-    const addr = b.address ? dim(` — ${b.address}`) : "";
-    console.log(`\n  ${green("→")} ${b.name}${addr}\n`);
-    return b.name;
-  }
-
-  if (nameMatches.length > 1 && nameMatches.length <= 10) {
-    return await pickBranch(nameMatches, rl);
-  }
-
-  // Second try: geocode the input and find nearest branches
-  const hasGeo = branches.some((b) => b.lat != null);
-  if (hasGeo) {
-    process.stdout.write(dim("\n  Finding nearest branches... "));
-    const coords = await geocode(input);
-
-    if (coords) {
-      const nearest = findNearestBranches(branches, coords.lat, coords.lng, 5);
-      console.log(dim("done\n"));
-      return await pickBranch(
-        nearest.map((b) => ({
-          ...b,
-          _distance: b.distance,
-        })),
-        rl
-      );
-    } else {
-      console.log(dim("couldn't locate that address.\n"));
-    }
-  }
-
-  // Third try: show all matches if there were some
-  if (nameMatches.length > 10) {
-    console.log(dim(`\n  ${nameMatches.length} branches match. Try being more specific.\n`));
-  }
-
-  return undefined;
 }
 
 async function pickBranch(
