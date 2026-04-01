@@ -77,8 +77,8 @@ shelflife
 Clone, build, and link:
 
 ```bash
-git clone https://github.com/sophiealula/library_goodreads_claude.git
-cd library_goodreads_claude
+git clone https://github.com/sophiealula/shelflife-goodreads.git
+cd shelflife-goodreads
 npm install
 npm run build
 npm link
